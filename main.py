@@ -3,6 +3,8 @@ import time
 from datetime import datetime
 import config
 from scrapers.linkedin_scraper import LinkedInScraper
+from scrapers.twitter_scraper import TwitterScraper
+from scrapers.telegram_scraper import TelegramScraper
 from notifiers.whatsapp_notifier import WhatsAppNotifier
 
 def run_job_search():
@@ -12,6 +14,10 @@ def run_job_search():
     scrapers = []
     if config.PLATFORMS.get("linkedin"):
         scrapers.append(LinkedInScraper())
+    if config.PLATFORMS.get("twitter"):
+        scrapers.append(TwitterScraper())
+    if config.PLATFORMS.get("telegram"):
+        scrapers.append(TelegramScraper())
     
     # Initialize notifier
     notifier = WhatsAppNotifier()
@@ -26,6 +32,7 @@ def run_job_search():
                 max_age_hours=config.MAX_AGE_HOURS
             )
             all_jobs.extend(filtered_jobs)
+            print(f"Found {len(filtered_jobs)} jobs from {scraper.__class__.__name__}")
         except Exception as e:
             print(f"Error with scraper {scraper.__class__.__name__}: {str(e)}")
     

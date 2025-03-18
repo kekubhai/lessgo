@@ -11,8 +11,8 @@ KEYWORDS: List[str] = [
 # Platforms to scrape
 PLATFORMS: Dict[str, bool] = {
     "linkedin": True,
-    "twitter": True
-
+    "twitter": True,
+    "telegram": True
 }
 
 # Time settings (24-hour format)
@@ -42,6 +42,6 @@ Apply here: {link}
 LOCATIONS: List[str] = [
     "Remote",
     "United States",
-    "United Kingdom"
+    "United Kingdom",
     "India"
 ] 
