@@ -1,0 +1,9 @@
+selenium==4.16.0
+python-dotenv==1.0.0
+beautifulsoup4==4.12.2
+requests==2.31.0
+pywhatkit==5.4
+schedule==1.2.1
+linkedin-api==2.0.3
+tweepy==4.14.0
+python-telegram-bot==20.7 
