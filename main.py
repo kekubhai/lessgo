@@ -1,59 +1,77 @@
 import schedule
 import time
 from datetime import datetime
+from job_scrapers import LinkedInScraper, TwitterScraper, TelegramScraper
+from notifiers import WhatsAppNotifier
 import config
-from scrapers.linkedin_scraper import LinkedInScraper
-from scrapers.twitter_scraper import TwitterScraper
-from scrapers.telegram_scraper import TelegramScraper
-from notifiers.whatsapp_notifier import WhatsAppNotifier
 
-def run_job_search():
-    print(f"Starting job search at {datetime.now()}")
+def scrape_and_notify():
+    """Main function that handles job scraping and notifications"""
     
-    # Initialize scrapers based on config
-    scrapers = []
-    if config.PLATFORMS.get("linkedin"):
-        scrapers.append(LinkedInScraper())
-    if config.PLATFORMS.get("twitter"):
-        scrapers.append(TwitterScraper())
-    if config.PLATFORMS.get("telegram"):
-        scrapers.append(TelegramScraper())
+    print(f"🔍 Starting job search at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    # Initialize notifier
-    notifier = WhatsAppNotifier()
+    # Initialize all scrapers that are enabled in config
+    active_scrapers = []
+    if config.PLATFORMS["linkedin"]:
+        active_scrapers.append(LinkedInScraper())
+    if config.PLATFORMS["twitter"]:
+        active_scrapers.append(TwitterScraper())
+    if config.PLATFORMS["telegram"]:
+        active_scrapers.append(TelegramScraper())
     
-    # Collect all jobs from all platforms
+    # Initialize WhatsApp notifier
+    try:
+        notifier = WhatsAppNotifier()
+    except ValueError as e:
+        print(f"❌ Error setting up WhatsApp: {str(e)}")
+        return
+    
+    # Collect jobs from all platforms
     all_jobs = []
-    for scraper in scrapers:
+    for scraper in active_scrapers:
         try:
-            jobs = scraper.search_jobs(config.KEYWORDS, config.LOCATIONS)
+            print(f"📱 Searching on {scraper.__class__.__name__}")
+            
+            # Get and filter jobs
+            jobs = scraper.search_jobs(
+                keywords=config.KEYWORDS,
+                locations=config.LOCATIONS
+            )
             filtered_jobs = scraper.filter_jobs(
                 min_salary=config.MIN_SALARY,
                 max_age_hours=config.MAX_AGE_HOURS
             )
+            
             all_jobs.extend(filtered_jobs)
-            print(f"Found {len(filtered_jobs)} jobs from {scraper.__class__.__name__}")
+            print(f"✅ Found {len(filtered_jobs)} matching jobs")
+            
         except Exception as e:
-            print(f"Error with scraper {scraper.__class__.__name__}: {str(e)}")
+            print(f"❌ Error with {scraper.__class__.__name__}: {str(e)}")
     
-    # Send notifications for new jobs
+    # Send notifications if we found any jobs
     if all_jobs:
         try:
             notifier.send_notification(all_jobs, config.MESSAGE_TEMPLATE)
-            print(f"Sent notifications for {len(all_jobs)} jobs")
+            print(f"📱 Sent notifications for {len(all_jobs)} jobs")
         except Exception as e:
-            print(f"Error sending notifications: {str(e)}")
+            print(f"❌ Error sending notifications: {str(e)}")
     else:
-        print("No new jobs found")
+        print("ℹ️ No new jobs found")
 
 def main():
-    print("Job Scraper Service Starting...")
+    """Entry point of the application"""
     
-    # Schedule the job to run at the configured time
-    schedule.every().day.at(config.SCHEDULE_TIME).do(run_job_search)
+    print("🚀 Job Scraper Starting...")
+    print(f"⚙️ Configured to search for: {', '.join(config.KEYWORDS)}")
+    print(f"📍 In locations: {', '.join(config.LOCATIONS)}")
     
-    # Also run once immediately
-    run_job_search()
+    # Schedule daily runs
+    schedule.every().day.at(config.SCHEDULE_TIME).do(scrape_and_notify)
+    print(f"⏰ Scheduled to run daily at {config.SCHEDULE_TIME}")
+    
+    # Run once immediately
+    print("▶️ Running initial search...")
+    scrape_and_notify()
     
     # Keep the script running
     while True:
