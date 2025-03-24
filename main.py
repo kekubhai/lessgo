@@ -1,7 +1,7 @@
 import schedule
 import time
 from datetime import datetime
-from job_scrapers import LinkedInScraper, TelegramScraper  # TwitterScraper commented out
+from scrapers import LinkedInScraper, TelegramScraper  # TwitterScraper commented out
 from notifiers import WhatsAppNotifier
 import config
 
