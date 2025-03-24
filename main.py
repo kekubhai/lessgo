@@ -4,7 +4,8 @@ from datetime import datetime
 from scrapers import LinkedInScraper, TelegramScraper  # TwitterScraper commented out
 from notifiers import WhatsAppNotifier
 import config
-
+from .linkedin import LinkedInScraper
+from .telegram import TelegramScraper
 def scrape_and_notify():
     """Main function that handles job scraping and notifications"""
     
