@@ -26,51 +26,65 @@ class TelegramScraper(BaseScraper):
             print(f"Telegram authentication failed: {str(e)}")
             return False
 
-    async def _fetch_channel_messages(self, channel: str, keywords: List[str], max_age_hours: int = 24) -> List[JobListing]:
-        """Fetch recent messages from a Telegram channel."""
-        jobs = []
-        try:
-            # Get recent messages
-            messages = await self.bot.get_chat_history(
-                chat_id=channel,
-                limit=100
-            )
-            
-            cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
-            
-            for message in messages:
-                try:
-                    # Skip old messages
-                    if message.date < cutoff_time:
-                        continue
-                    
-                    # Check if message contains any of our keywords
-                    text = message.text.lower() if message.text else ""
-                    if not any(keyword.lower() in text for keyword in keywords):
-                        continue
-                    
-                    # Create job listing
-                    job_listing = JobListing(
-                        title=text.split('\n')[0][:100],  # Use first line as title
-                        company=channel,
-                        description=text,
-                        link=f"https://t.me/{channel}/{message.message_id}",
-                        platform="Telegram",
-                        posted_time=message.date,
-                        location="Not specified"
-                    )
-                    
-                    jobs.append(job_listing)
-                    
-                except Exception as e:
-                    print(f"Error processing Telegram message: {str(e)}")
-                    continue
-                    
-        except Exception as e:
-            print(f"Error fetching messages from channel {channel}: {str(e)}")
-            
-        return jobs
+# Replace the _fetch_channel_messages method with:
+async def _fetch_channel_messages(self, channel: str, keywords: List[str], max_age_hours: int = 24) -> List[JobListing]:
+    """Fetch recent messages from a Telegram channel."""
+    jobs = []
+    try:
+        # Use proper method to get messages
+        updates = await self.bot.get_updates(timeout=30)
+        messages = []
+        
+        # Loop through updates to find channel messages
+        for update in updates:
+            if update.channel_post and update.channel_post.chat.username == channel:
+                messages.append(update.channel_post)
+        
+        cutoff_time = datetime.now() - timedelta(hours=max_age_hours)
+        
+        for message in messages:
+            if not message.text:
+                continue
+                
+            if message.date < cutoff_time:
+                continue
+                
+            # Check for keywords
+            if any(keyword.lower() in message.text.lower() for keyword in keywords):
+                # Create job listing
+                job = JobListing(
+                    title=self._extract_job_title(message.text) or "Job Opening",
+                    company=channel,
+                    description=message.text[:500] + "..." if len(message.text) > 500 else message.text,
+                    link=f"https://t.me/{channel}/{message.message_id}",
+                    platform="Telegram",
+                    posted_time=message.date,
+                    location="Not specified"
+                )
+                jobs.append(job)
+                
+    except Exception as e:
+        print(f"Error fetching messages from channel {channel}: {str(e)}")
+        
+    return jobs
 
+def _extract_job_title(self, text: str) -> str:
+    """Extract a job title from message text"""
+    # Simple implementation - look for common patterns
+    title_patterns = [
+        r'(?i)hiring[:\s]+([^.!?\n]+)',
+        r'(?i)position[:\s]+([^.!?\n]+)',
+        r'(?i)job[:\s]+([^.!?\n]+)'
+    ]
+    
+    for pattern in title_patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match.group(1).strip()
+    
+    # If no pattern matches, return first line or first 50 chars
+    first_line = text.split('\n')[0].strip()
+    return first_line[:50] + "..." if len(first_line) > 50 else first_line
     def search_jobs(self, keywords: List[str], locations: List[str]) -> List[JobListing]:
         if not self.bot:
             if not self.authenticate():
