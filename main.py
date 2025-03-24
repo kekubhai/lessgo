@@ -1,7 +1,7 @@
 import schedule
 import time
 from datetime import datetime
-from job_scrapers import LinkedInScraper, TwitterScraper, TelegramScraper
+from job_scrapers import LinkedInScraper, TelegramScraper  # TwitterScraper commented out
 from notifiers import WhatsAppNotifier
 import config
 
@@ -14,8 +14,8 @@ def scrape_and_notify():
     active_scrapers = []
     if config.PLATFORMS["linkedin"]:
         active_scrapers.append(LinkedInScraper())
-    if config.PLATFORMS["twitter"]:
-        active_scrapers.append(TwitterScraper())
+    # if config.PLATFORMS["twitter"]:
+    #     active_scrapers.append(TwitterScraper())
     if config.PLATFORMS["telegram"]:
         active_scrapers.append(TelegramScraper())
     
@@ -79,4 +79,4 @@ def main():
         time.sleep(60)
 
 if __name__ == "__main__":
-    main() 
+    main()
